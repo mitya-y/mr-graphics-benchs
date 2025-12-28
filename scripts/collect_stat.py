@@ -7,12 +7,15 @@ from typing import List, Optional
 @dataclass
 class PerformanceMetrics:
     """Класс для хранения метрик производительности"""
+    frame_number: int
     cpu_fps: float
     cpu_time_ms: float
     gpu_fps: float
     gpu_time_ms: float
     cpu_rendering_time_ms: float
     culling_gpu_time_ms: float
+    build_depth_pyramid_gpu_time_ms: float
+    late_culling_gpu_time_ms: float
     gpu_rendering_time_ms: float
     gpu_models_time_ms: float
     gpu_shading_time_ms: float
@@ -25,12 +28,15 @@ class PerformanceMetrics:
     def from_dict(cls, data: dict) -> 'PerformanceMetrics':
         """Создает экземпляр класса из словаря"""
         return cls(
+            frame_number=data['frame_number'],
             cpu_fps=data['cpu_fps'],
             cpu_time_ms=data['cpu_time_ms'],
             gpu_fps=data['gpu_fps'],
             gpu_time_ms=data['gpu_time_ms'],
             cpu_rendering_time_ms=data['cpu_rendering_time_ms'],
             culling_gpu_time_ms=data['culling_gpu_time_ms'],
+            build_depth_pyramid_gpu_time_ms=data['build_depth_pyramid_gpu_time_ms'],
+            late_culling_gpu_time_ms=data['late_culling_gpu_time_ms'],
             gpu_rendering_time_ms=data['gpu_rendering_time_ms'],
             gpu_models_time_ms=data['gpu_models_time_ms'],
             gpu_shading_time_ms=data['gpu_shading_time_ms'],
@@ -161,9 +167,13 @@ def calculate_statistics(metrics: List[PerformanceMetrics], without_culling: boo
     print(f"Максимум: {max_gpu_time:.2f}")
     
     # Средние значения culling time для справки
-    if without_culling:
-        avg_culling = sum(m.culling_gpu_time_ms for m in filtered_metrics) / len(filtered_metrics)
-        print(f"\nСправка - среднее время culling (вычтено): {avg_culling:.2f} ms")
+    avg_culling = sum(m.culling_gpu_time_ms for m in filtered_metrics) / len(filtered_metrics)
+    print(f"\nСправка - среднее время culling (вычтено): {avg_culling:.2f} ms")
+
+    avg_occlusion_culling = sum(m.late_culling_gpu_time_ms + m.build_depth_pyramid_gpu_time_ms
+                                for m in filtered_metrics) / len(filtered_metrics)
+    print(f"\nСправка - среднее время occlusion culling (вычтено): {avg_occlusion_culling:.2f} ms")
+
 
 
 def main():
@@ -193,4 +203,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
